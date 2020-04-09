@@ -21,6 +21,9 @@ import io.agroal.api.configuration.AgroalDataSourceConfiguration;
 import io.agroal.api.configuration.supplier.AgroalConnectionFactoryConfigurationSupplier;
 import io.agroal.api.configuration.supplier.AgroalConnectionPoolConfigurationSupplier;
 import io.agroal.api.configuration.supplier.AgroalDataSourceConfigurationSupplier;
+import io.agroal.api.exceptionsorter.MSSQLExceptionSorter;
+import io.agroal.api.exceptionsorter.MySQLExceptionSorter;
+import io.agroal.api.exceptionsorter.PostgreSQLExceptionSorter;
 import io.agroal.api.security.NamePrincipal;
 import io.agroal.api.security.SimplePassword;
 import io.agroal.api.transaction.TransactionIntegration;
@@ -32,6 +35,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
@@ -132,7 +136,8 @@ public abstract class AbstractDataSourceProducer {
 
         if (!isLegacy) {
             applyNewConfiguration(dataSourceConfiguration, poolConfiguration, connectionFactoryConfiguration, driver,
-                    dataSourceJdbcBuildTimeConfig, dataSourceRuntimeConfig, dataSourceJdbcRuntimeConfig, mpMetricsPresent);
+                    dataSourceJdbcBuildTimeConfig, dataSourceRuntimeConfig, dataSourceJdbcRuntimeConfig, resolvedDbKind,
+                    mpMetricsPresent);
         } else {
             applyLegacyConfiguration(dataSourceConfiguration, poolConfiguration, connectionFactoryConfiguration, driver,
                     dataSourceRuntimeConfig, legacyDataSourceJdbcBuildTimeConfig, legacyDataSourceRuntimeConfig,
@@ -165,7 +170,7 @@ public abstract class AbstractDataSourceProducer {
             AgroalConnectionPoolConfigurationSupplier poolConfiguration,
             AgroalConnectionFactoryConfigurationSupplier connectionFactoryConfiguration, Class<?> driver,
             DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig, DataSourceRuntimeConfig dataSourceRuntimeConfig,
-            DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig, boolean mpMetricsPresent) {
+            DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig, String resolvedDbKind, boolean mpMetricsPresent) {
         connectionFactoryConfiguration.jdbcUrl(dataSourceJdbcRuntimeConfig.url.get());
         connectionFactoryConfiguration.connectionProviderClass(driver);
         connectionFactoryConfiguration.trackJdbcResources(dataSourceJdbcRuntimeConfig.detectStatementLeaks);
@@ -261,6 +266,15 @@ public abstract class AbstractDataSourceProducer {
         }
         if (dataSourceJdbcRuntimeConfig.maxLifetime.isPresent()) {
             poolConfiguration.maxLifetime(dataSourceJdbcRuntimeConfig.maxLifetime.get());
+        }
+
+        // Set the exception sorter based on the defined DB kind
+        if (DatabaseKind.isMariaDB(resolvedDbKind) || DatabaseKind.isMySQL(resolvedDbKind)) {
+            poolConfiguration.exceptionSorter(new MySQLExceptionSorter());
+        } else if (DatabaseKind.isMsSQL(resolvedDbKind)) {
+            poolConfiguration.exceptionSorter(new MSSQLExceptionSorter());
+        } else if (DatabaseKind.isPostgreSQL(resolvedDbKind)) {
+            poolConfiguration.exceptionSorter(new PostgreSQLExceptionSorter());
         }
     }
 
