@@ -20,7 +20,6 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.metamodel.Metamodel;
 import javax.transaction.Status;
-import javax.transaction.Synchronization;
 import javax.transaction.TransactionManager;
 import javax.transaction.TransactionSynchronizationRegistry;
 
@@ -57,17 +56,6 @@ public class TransactionScopedEntityManager implements EntityManager {
             EntityManager newEm = emf.createEntityManager();
             newEm.joinTransaction();
             tsr.putResource(transactionKey, newEm);
-            tsr.registerInterposedSynchronization(new Synchronization() {
-                @Override
-                public void beforeCompletion() {
-                    newEm.flush();
-                }
-
-                @Override
-                public void afterCompletion(int i) {
-                    newEm.close();
-                }
-            });
             return new EntityManagerResult(newEm, false, true);
         } else {
             //this will throw an exception if the request scope is not active
