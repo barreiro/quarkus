@@ -292,6 +292,9 @@ public class DataSources {
         if (dataSourceJdbcRuntimeConfig.maxLifetime.isPresent()) {
             poolConfiguration.maxLifetime(dataSourceJdbcRuntimeConfig.maxLifetime.get());
         }
+        if (dataSourceJdbcRuntimeConfig.transactionRequirement.isPresent()) {
+            poolConfiguration.transactionRequirement(dataSourceJdbcRuntimeConfig.transactionRequirement.get());
+        }
     }
 
     public DataSourceBuildTimeConfig getDataSourceBuildTimeConfig(String dataSourceName) {
