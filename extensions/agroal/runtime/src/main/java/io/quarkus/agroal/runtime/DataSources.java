@@ -24,6 +24,7 @@ import org.jboss.logging.Logger;
 
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.AgroalPoolInterceptor;
+import io.agroal.api.configuration.AgroalConnectionPoolConfiguration;
 import io.agroal.api.configuration.AgroalConnectionPoolConfiguration.ConnectionValidator;
 import io.agroal.api.configuration.AgroalDataSourceConfiguration;
 import io.agroal.api.configuration.AgroalDataSourceConfiguration.DataSourceImplementation;
@@ -304,6 +305,7 @@ public class DataSources {
         if (dataSourceJdbcRuntimeConfig.transactionRequirement.isPresent()) {
             poolConfiguration.transactionRequirement(dataSourceJdbcRuntimeConfig.transactionRequirement.get());
         }
+        poolConfiguration.multipleAcquisition(AgroalConnectionPoolConfiguration.MultipleAcquisitionAction.WARN);
         poolConfiguration.enhancedLeakReport(dataSourceJdbcRuntimeConfig.extendedLeakReport);
     }
 
